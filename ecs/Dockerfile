@@ -1,4 +1,4 @@
-FROM ejabberd/mix as builder
+FROM ghcr.io/badlop/mix as builder
 ARG VERSION
 ENV VERSION=${VERSION:-latest} \
     MIX_ENV=prod
