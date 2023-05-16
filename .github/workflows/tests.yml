@@ -100,7 +100,7 @@ jobs:
             ${{ steps.mixmeta.outputs.tags }}
 
       - name: Prepare ecs Dockerfile
-        run: sed -i 's|ejabberd/mix|${{ steps.mixmeta.outputs.tags }}|g' ecs/Dockerfile
+        run: sed -i 's|ejabberd/mix|${{ steps.localregistry.outputs.mixtag }}|g' ecs/Dockerfile
 
       - name: Build and push ecs image
         uses: docker/build-push-action@v3
