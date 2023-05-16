@@ -14,6 +14,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
+  LOCAL_REGISTRY: localhost:5000
   MIX_IMAGE_NAME: ${{ github.repository_owner }}/mix
   ECS_IMAGE_NAME: ${{ github.repository_owner }}/ecs
 
@@ -26,6 +27,11 @@ jobs:
       max-parallel: 1
     permissions:
       packages: write
+    services:
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
 
     steps:
 
@@ -65,11 +71,19 @@ jobs:
             org.opencontainers.image.licenses=GPL-2.0
             org.opencontainers.image.vendor=ProcessOne
 
+      - name: Prepare local tags
+        id: localregistry
+        run: |
+          echo "mixtag=${{ env.LOCAL_REGISTRY }}/${{ env.MIX_IMAGE_NAME }}:${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          echo "ecstag=${{ env.LOCAL_REGISTRY }}/${{ env.ECS_IMAGE_NAME }}:${{ github.ref_name }}" >> $GITHUB_OUTPUT
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
+        with:
+          driver-opts: network=host
 
       - name: Build and push mix image
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v4
         with:
           build-args: |
             VERSION=${{ steps.gitdescribe.outputs.ver }}
@@ -79,10 +93,12 @@ jobs:
           labels: ${{ steps.mixmeta.outputs.labels }}
           platforms: linux/amd64
           push: true
-          tags: ${{ steps.mixmeta.outputs.tags }} ### cuando no sea tag -> local registry
+          tags: |
+            ${{ steps.mixmeta.outputs.tags }}
+            ${{ steps.localregistry.outputs.mixtag }}
 
       - name: Prepare ecs Dockerfile
-        run: sed -i 's|ejabberd/mix|${{ env.REGISTRY }}/${{ env.MIX_IMAGE_NAME }}|g' ecs/Dockerfile ### cuando no sea tag -> local registry
+        run: sed -i 's|ejabberd/mix|${{ steps.mixmeta.outputs.tags }}|g' ecs/Dockerfile
 
       - name: Build and push ecs image
         uses: docker/build-push-action@v3
@@ -95,16 +111,14 @@ jobs:
           labels: ${{ steps.ecsmeta.outputs.labels }}
           platforms: linux/amd64
           push: true
-          tags: ${{ steps.ecsmeta.outputs.tags }} ### cuando no sea tag -> local registry
-
-      - name: Get a single tag
-        id: ecstag
-        run: echo "tag=${{ env.REGISTRY }}/${{ env.ECS_IMAGE_NAME }}:${{ github.ref_name }}" >> $GITHUB_OUTPUT ### cuando no sea tag -> local registry
+          tags: |
+            ${{ steps.ecsmeta.outputs.tags }}
+            ${{ steps.localregistry.outputs.ecstag }}
 
       - name: Run ecs image
         run: |
             docker images
-            docker run --name ejabberd -d -p 5222:5222 ${{ steps.ecstag.outputs.tag }}
+            docker run --name ejabberd -d -p 5222:5222 ${{ steps.localregistry.outputs.ecstag }}
 
       - name: Wait ejabberd started
         run: |
@@ -121,7 +135,7 @@ jobs:
 
       - name: Save image
         run: |
-            docker image save ${{ steps.ecstag.outputs.tag }} --output ejabberd-latest.tar
+            docker image save ${{ steps.localregistry.outputs.ecstag }} --output ejabberd-latest.tar
 
       - name: Upload image
         uses: actions/upload-artifact@v3
