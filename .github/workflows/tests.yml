@@ -53,6 +53,7 @@ jobs:
 
       - name: Extract mix metadata (tags, labels) for Docker
         id: mixmeta
+        if: github.ref_type == 'tag'
         uses: docker/metadata-action@v4
         with:
           images: ${{ env.REGISTRY }}/${{ env.MIX_IMAGE_NAME }}
@@ -63,6 +64,7 @@ jobs:
 
       - name: Extract ecs metadata (tags, labels) for Docker
         id: ecsmeta
+        if: github.ref_type == 'tag'
         uses: docker/metadata-action@v4
         with:
           images: ${{ env.REGISTRY }}/${{ env.ECS_IMAGE_NAME }}
@@ -94,8 +96,8 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: |
-            ${{ steps.mixmeta.outputs.tags }}
             ${{ steps.localregistry.outputs.mixtag }}
+            ${{ steps.mixmeta.outputs.tags }}
 
       - name: Prepare ecs Dockerfile
         run: sed -i 's|ejabberd/mix|${{ steps.mixmeta.outputs.tags }}|g' ecs/Dockerfile
@@ -112,8 +114,8 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: |
-            ${{ steps.ecsmeta.outputs.tags }}
             ${{ steps.localregistry.outputs.ecstag }}
+            ${{ steps.ecsmeta.outputs.tags }}
 
       - name: Run ecs image
         run: |
