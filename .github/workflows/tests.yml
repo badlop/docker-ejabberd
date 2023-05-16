@@ -78,8 +78,7 @@ jobs:
           context: mix
           labels: ${{ steps.mixmeta.outputs.labels }}
           platforms: linux/amd64
-          load: ${{ github.ref_type != 'tag' }}
-          push: ${{ github.ref_type == 'tag' }}
+          push: true
           tags: ${{ steps.mixmeta.outputs.tags }}
 
       - name: Prepare ecs Dockerfile
@@ -95,8 +94,7 @@ jobs:
           context: ecs
           labels: ${{ steps.ecsmeta.outputs.labels }}
           platforms: linux/amd64
-          load: ${{ github.ref_type != 'tag' }}
-          push: ${{ github.ref_type == 'tag' }}
+          push: true
           tags: ${{ steps.ecsmeta.outputs.tags }}
 
       - name: Get a single tag
