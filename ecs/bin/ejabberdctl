@@ -2,7 +2,6 @@
 
 # define default configuration
 POLL=true
-SMP=enable
 ERL_MAX_PORTS=32000
 ERL_PROCESSES=250000
 ERL_MAX_ETS_TABLES=1400
@@ -148,14 +147,6 @@ exec_iex()
 # usage
 debugwarning()
 {
-    if [ "$OSTYPE" != "cygwin" ] && [ "$OSTYPE" != "win32" ] ; then
-        if [ "a$TERM" = "a" ] || [ "$TERM" = "dumb" ] ; then
-            echo "Terminal type not supported."
-            echo "You may have to set the TERM environment variable to fix this."
-            exit 8
-        fi
-    fi
-
     if [ "$EJABBERD_BYPASS_WARNINGS" != "true" ] ; then
         echo "--------------------------------------------------------------------"
         echo ""
@@ -169,11 +160,13 @@ debugwarning()
         echo "To exit and detach this shell from ejabberd, press:"
         echo "  control+g and then q"
         echo ""
+        #vt100 echo "Please do NOT use control+c in this debug shell !"
+        #vt100 echo ""
         echo "--------------------------------------------------------------------"
         echo "To bypass permanently this warning, add to ejabberdctl.cfg the line:"
         echo "  EJABBERD_BYPASS_WARNINGS=true"
         echo "Press return to continue"
-        read -r input
+        read -r _
         echo ""
     fi
 }
@@ -196,8 +189,41 @@ livewarning()
         echo "To bypass permanently this warning, add to ejabberdctl.cfg the line:"
         echo "  EJABBERD_BYPASS_WARNINGS=true"
         echo "Press return to continue"
-        read -r input
+        read -r _
         echo ""
+    fi
+}
+
+check_etop_result()
+{
+    result=$?
+    if [ $result -eq 1 ] ; then
+        echo ""
+        echo "It seems there was some problem running 'ejabberdctl etop'."
+        echo "Is the error message something like this?"
+        echo "  Failed to load module 'etop' because it cannot be found..."
+        echo "Then probably ejabberd was compiled with development tools disabled."
+        echo "To use 'etop', recompile ejabberd with: ./configure --enable-tools"
+        echo ""
+        exit $result
+    fi
+}
+
+check_iex_result()
+{
+    result=$?
+    if [ $result -eq 127 ] ; then
+        echo ""
+        echo "It seems there was some problem finding 'iex' binary from Elixir."
+        echo "Probably ejabberd was compiled with Rebar3 and Elixir disabled, like:"
+        echo "  ./configure"
+        echo "which is equivalent to:"
+        echo "  ./configure --with-rebar=rebar3 --disable-elixir"
+        echo "To use 'iex', recompile ejabberd enabling Elixir or using Mix:"
+        echo "  ./configure --enable-elixir"
+        echo "  ./configure --with-rebar=mix"
+        echo ""
+        exit $result
     fi
 }
 
