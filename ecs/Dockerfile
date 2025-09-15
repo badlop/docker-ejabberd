@@ -3,7 +3,7 @@ RUN go install -v \
     github.com/processone/ejabberd-api/cmd/ejabberd@latest \
     && mv bin/ejabberd bin/ejabberdapi
 
-FROM localhost:5000/badlop/mix AS builder
+FROM localhost:5000/badlop/mix:bump-images AS builder
 ARG VERSION
 ENV VERSION=${VERSION:-latest} \
     MIX_ENV=prod
