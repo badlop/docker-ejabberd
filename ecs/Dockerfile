@@ -3,7 +3,7 @@ RUN go install -v \
     github.com/processone/ejabberd-api/cmd/ejabberd@latest \
     && mv bin/ejabberd bin/ejabberdapi
 
-FROM docker.io/ejabberd/mix AS builder
+FROM ghcr.io/badlop/mix AS builder
 ARG VERSION
 ENV VERSION=${VERSION:-latest} \
     MIX_ENV=prod
